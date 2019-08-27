@@ -8,6 +8,7 @@ import (
 	"Object/FenBuShi/All/filelistingserver/filelisting"
 	"github.com/gpmgo/gopm/modules/log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 )
 
@@ -18,6 +19,7 @@ func errWrapper(
 	handler appHandler) func(
 	writer http.ResponseWriter, request *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		// panic
 		defer func() {
 			if r := recover(); r != nil {
 				log.Warn("Panic:%v", r)
@@ -29,10 +31,14 @@ func errWrapper(
 		err := handler(writer, request)
 		if err != nil {
 			log.Warn("Error handling request:%s", err.Error())
+			// user error
 			if userErr, ok := err.(userError); ok {
-				http.Error(writer, userErr.Message(), http.StatusBadRequest)
+				http.Error(writer,
+					userErr.Message(),
+					http.StatusBadRequest)
 				return
 			}
+			// system error
 			code := http.StatusOK
 			switch {
 			case os.IsNotExist(err):
